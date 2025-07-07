@@ -38,7 +38,11 @@ const PIPE_GAP = 200; // Gap between the top and bottom pipe
 // NOTE: These components use React Native's <View> and <Image>, which are compatible
 // in an Ionic (web) environment thanks to React Native for Web.
 
-const Bird = ({ body }) => {
+type BirdProps = {
+    body: Matter.Body;
+};
+
+const Bird = ({ body }: BirdProps) => {
     const { x, y } = body.position;
     const size = body.circleRadius * 2;
     return (
@@ -56,7 +60,12 @@ const Bird = ({ body }) => {
     );
 };
 
-const Pipe = ({ body, size }) => {
+type PipeProps = {
+    body: Matter.Body;
+    size: { width: number; height: number };
+};
+
+const Pipe = ({ body, size }: PipeProps) => {
     const { x, y } = body.position;
     const { width, height } = size;
 
@@ -84,7 +93,8 @@ const Pipe = ({ body, size }) => {
     );
 };
 
-const Floor = ({ body }) => {
+
+const Floor = ({ body }: { body: Matter.Body }) => {
     const { x, y } = body.position;
     const { width, height } = body.bounds.max;
     return (
@@ -118,7 +128,10 @@ const setupWorld = () => {
 };
 
 // --- PHYSICS & GAME LOGIC SYSTEM ---
-const Physics = (entities, { touches, time, dispatch }) => {
+const Physics = (
+    entities: { [key: string]: any },
+    { touches, time, dispatch }: { touches: any; time: any; dispatch: any }
+) => {
     let engine = entities.physics.engine;
 
     touches.press?.forEach(() => {
@@ -156,7 +169,7 @@ const Physics = (entities, { touches, time, dispatch }) => {
         }
     });
 
-    Matter.Events.on(engine, 'collisionStart', (event) => {
+    Matter.Events.on(engine, 'collisionStart', (event: Matter.IEventCollision<Matter.Engine>) => {
         const pairs = event.pairs;
         const birdBody = entities.bird.body;
         for (let i = 0; i < pairs.length; i++) {
@@ -176,15 +189,16 @@ const Physics = (entities, { touches, time, dispatch }) => {
 const App = () => {
     const [running, setRunning] = useState(true);
     const [score, setScore] = useState(0);
-    const gameEngineRef = useRef(null);
+    const [gameKey, setGameKey] = useState(0);
+    const gameEngineRef = useRef<GameEngine | null>(null);
 
     const reset = () => {
-        gameEngineRef.current.swap(setupWorld());
+        setGameKey(k => k + 1);
         setRunning(true);
         setScore(0);
     };
 
-    const handleEvent = (e) => {
+    const handleEvent = (e: { type: string }) => {
         switch (e.type) {
             case 'game_over':
                 setRunning(false);
@@ -204,6 +218,7 @@ const App = () => {
                         <StatusBar hidden={true} />
                         <Text style={styles.score}>{score}</Text>
                         <GameEngine
+                            key={gameKey}
                             ref={gameEngineRef}
                             style={styles.gameContainer}
                             systems={[Physics]}
